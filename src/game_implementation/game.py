@@ -42,12 +42,8 @@ class Game:
 
         return self.board.is_round_over()
 
-    def update_end_of_round_scores(self, winner: int) -> None:
-        self.board.score_round(winner)
-
     def end_round(self, winner_id: int) -> bool:
-        self.update_end_of_round_scores(winner_id)
-        self.board.reset()
+        self.board.end_round(winner_id)
         self.round += 1
         self.turn = 0
         return self.round >= self.player_count

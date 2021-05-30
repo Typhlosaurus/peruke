@@ -7,14 +7,10 @@ from game_implementation.player import Player
 
 class Board:
     def __init__(self, player_count: int):
-        self.players = [Player() for _ in range(player_count)]
+        self.players = [Player(player_id) for player_id in range(player_count)]
 
     def __repr__(self) -> str:
         return "\n".join([player.__repr__() for player in self.players])
-
-    def reset(self):
-        for player in self.players:
-            player.reset()
 
     def is_round_over(self) -> bool:
         return any([player.is_over() for player in self.players])
@@ -49,7 +45,7 @@ class Board:
                         print(f"Taking {disc_id + 1} from {player_id}")
                         self.take_disc(winner_id, player_id, disc_id)
 
-    def score_round(self, winner_id: int) -> Sequence[int]:
+    def end_round(self, winner_id: int) -> Sequence[int]:
         self.take_for_round_winner(winner_id)
         round_scores = [player.round_score for player in self.players]
         print(f"Scoring end of round: {round_scores}")
