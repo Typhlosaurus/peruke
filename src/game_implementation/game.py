@@ -1,4 +1,4 @@
-from typing import Protocol, Sequence
+from typing import Dict, Protocol, Sequence
 
 from game_implementation.action import Action
 from game_implementation.dice import get_dice, get_unique_dice
@@ -12,13 +12,22 @@ class Strategy(Protocol):
 
 
 class Game:
-    def __init__(self, player_count: int, start_player: int):
+    def __init__(
+        self,
+        player_count: int = 3,
+        start_player: int = 0,
+        turn: int = 0,
+        round: int = 0,
+        player_init: Sequence[Player] = (),
+    ):
         self.player_count = player_count
-        self.players = [Player(player_id) for player_id in range(player_count)]
-        self.turn = 0
-        self.round = 0
+        self.turn = turn
+        self.round = round
         self.start_player = start_player
         self.player_id = start_player
+        player_dict = {player.player_id: player for player in player_init}
+        # Use any players supplied, new players where not supplied
+        self.players = [player_dict.get(player_id, Player(player_id)) for player_id in range(player_count)]
 
     def __repr__(self):
         return "\n".join(
@@ -32,7 +41,7 @@ class Game:
     def is_round_over(self) -> bool:
         return any([player.is_over() for player in self.players])
 
-    def take_disc(self, player_id: int, target_id: int, disc_id):
+    def take_disc(self, player_id: int, target_id: int, disc_id) -> None:
         player = self.players[player_id]
         target = self.players[target_id]
         target.make_gone(disc_id)
