@@ -1,4 +1,4 @@
-from typing import Dict, Protocol, Sequence
+from typing import Protocol, Sequence
 
 from game_implementation.action import Action
 from game_implementation.dice import get_dice, get_unique_dice
@@ -26,7 +26,7 @@ class Game:
         self.start_player = start_player
         self.player_id = start_player
         player_dict = {player.player_id: player for player in player_init}
-        # Use any players supplied, new players where not supplied
+        # Use any players supplied, create new players where not supplied
         self.players = [player_dict.get(player_id, Player(player_id)) for player_id in range(player_count)]
 
     def __repr__(self):
@@ -41,35 +41,32 @@ class Game:
     def is_round_over(self) -> bool:
         return any([player.is_over() for player in self.players])
 
-    def take_disc(self, player_id: int, target_id: int, disc_id) -> None:
-        player = self.players[player_id]
-        target = self.players[target_id]
+    def take_disc(self, taker: Player, target: Player, disc_id) -> None:
         target.make_gone(disc_id)
-        player.take(disc_id)
-
-    def make_safe(self, target_id: int, disc_id: int) -> bool:
-        return self.players[target_id].make_safe(disc_id)
-
-    def make_vulnerable(self, target_id: int, disc_id: int) -> bool:
-        return self.players[target_id].make_vulnerable(disc_id)
-
-    def take_action(self, player_id: int, action: Action):
-        print(f"Player: {player_id}: {action}")
-        if action.new_state == DiscState.Gone:
-            self.take_disc(player_id, action.target_id, action.disc_id)
-        elif action.new_state == DiscState.Vulnerable:
-            self.make_vulnerable(action.target_id, action.disc_id)
-        elif action.new_state == DiscState.Safe:
-            self.make_safe(action.target_id, action.disc_id)
+        taker.take(disc_id)
 
     def winner_take_vulnerable_discs(self, winner_id: int):
         print(f"Giving vulnerable disks to winner: {winner_id}")
-        for player_id, player in enumerate(self.players):
-            if player_id != winner_id:
-                for disc_id, disc in enumerate(player.discs):
-                    if disc == DiscState.Vulnerable:
-                        print(f"Taking {disc_id + 1} from {player_id}")
-                        self.take_disc(winner_id, player_id, disc_id)
+        winner = self.players[winner_id]
+        loosers = [looser for looser in self.players if looser.player_id != winner_id]
+        for looser in loosers:
+            disc_ids = [disc_id for disc_id, disc in enumerate(looser.discs) if disc == DiscState.Vulnerable]
+            for disc_id in disc_ids:
+                print(f"Taking {disc_id + 1} from {looser.player_id}")
+                self.take_disc(winner, looser, disc_id)
+
+    def play_action(self, player_id: int, action: Action) -> bool:
+        print(f"Player: {player_id}: {action}")
+        target = self.players[action.target_id]
+        if action.new_state == DiscState.Gone:
+            player = self.players[player_id]
+            self.take_disc(player, target, action.disc_id)
+        elif action.new_state == DiscState.Vulnerable:
+            target.make_vulnerable(action.disc_id)
+        elif action.new_state == DiscState.Safe:
+            target.make_safe(action.disc_id)
+
+        return self.is_round_over()
 
     def possible_actions(self, player_id: int, disc_id: int) -> Sequence[Action]:
         actions = []
@@ -79,14 +76,10 @@ class Game:
                 actions.append(Action(target_id, disc_id, new_state))
         return actions
 
-    def play_turn(self, player_id: int, action: Action) -> bool:
-        self.take_action(player_id, action)
-        return self.is_round_over()
-
     def take_turn(self, player_id: int, strategy: Strategy) -> bool:
         dice = get_dice()
         for action in strategy.choose_actions(player_id, dice):
-            self.play_turn(player_id, action)
+            self.play_action(player_id, action)
 
         self.turn += 1
 
@@ -108,7 +101,7 @@ class Game:
         for player_id in range(self.player_count):
             dice = get_unique_dice()
             for d in dice:
-                self.play_turn(player_id, Action(player_id, d, DiscState.Safe))
+                self.play_action(player_id, Action(player_id, d, DiscState.Safe))
 
     def winners(self) -> Sequence[int]:
         winning_score = max([player.score for player in self.players])
