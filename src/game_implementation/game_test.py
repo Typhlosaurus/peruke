@@ -1,13 +1,14 @@
-from typing import Dict, List, Sequence, Union
+from typing import Collection, List, Union
 
 import pytest
 from pytest_mock import MockFixture
 
 from game_implementation.action import Action
 from game_implementation.disc_state import DiscState
-from game_implementation.exceptions import DiscStateException
-from game_implementation.game import Game
+from game_implementation.exceptions import DiscStateException, IllegalMoveException
+from game_implementation.game import Game, Strategy
 from game_implementation.player import Player
+from game_implementation.types import DiscId, PlayerId
 
 
 class TestGame:
@@ -169,9 +170,9 @@ class TestGame:
                 Player(0, init_disks=[DiscState.Gone] * 5 + [DiscState.Vulnerable], init_taken=[1]),
                 Player(1),
                 Player(2, init_disks=[DiscState.Safe] * 5 + [DiscState.Vulnerable], init_taken=[2]),
-                Player(0),
-                Player(1),
-                Player(2),
+                Player(0, init_disks=[DiscState.Gone] * 6, init_taken=[1]),
+                Player(1, init_taken=[6, 6]),
+                Player(2, init_disks=[DiscState.Safe] * 5 + [DiscState.Gone], init_taken=[2]),
             ),
         ],
     )
@@ -190,23 +191,142 @@ class TestGame:
 
         assert game.players == [expected_player0, expected_player1, expected_player2]
 
-    def test_possible_actions(self):
-        game = Game(player_count=3, player_init=[])
+    @pytest.mark.parametrize(
+        "player0, player1, dice, expected_actions",
+        [
+            (
+                Player(0, init_disks={0: DiscState.Vulnerable}),
+                Player(1, init_disks={0: DiscState.Vulnerable}),
+                0,
+                [Action(0, 0, DiscState.Safe), Action(1, 0, DiscState.Gone)],
+            ),
+            (Player(0, init_disks={0: DiscState.Safe}), Player(1, init_disks={0: DiscState.Gone}), 0, []),
+            (
+                Player(0, init_disks={0: DiscState.Gone}),
+                Player(1, init_disks={0: DiscState.Safe}),
+                0,
+                [Action(1, 0, DiscState.Vulnerable)],
+            ),
+            (
+                Player(0, init_disks={4: DiscState.Vulnerable}),
+                Player(1, init_disks={4: DiscState.Safe}),
+                4,
+                [Action(0, 4, DiscState.Safe), Action(1, 4, DiscState.Vulnerable)],
+            ),
+        ],
+    )
+    def test_possible_actions(self, player0: Player, player1: Player, dice: DiscId, expected_actions: List[Action]):
+        game = Game(player_count=2, player_init=[player0, player1])
 
-        game.possible_actions()
-        assert False
+        possible_actions = game.possible_actions(0, dice)
 
-    def test_play_turn(self):
-        game = Game(player_count=3, player_init=[])
+        assert possible_actions == expected_actions
 
-        game.play_action()
-        assert False
+    @pytest.mark.parametrize(
+        "init_players, dice_rolls, chosen_actions, expected_player_states",
+        [
+            (
+                # all different dice, all used
+                [Player(0), Player(1)],
+                [1, 2, 3],
+                [Action(0, 1, DiscState.Safe), Action(1, 2, DiscState.Gone), Action(1, 3, DiscState.Gone)],
+                [
+                    Player(0, init_disks={1: DiscState.Safe}, init_taken=[3, 4]),
+                    Player(1, init_disks={2: DiscState.Gone, 3: DiscState.Gone}),
+                ],
+            ),
+            (
+                # Duplicate dice and an unusable dice
+                [
+                    Player(0, init_disks={1: DiscState.Gone}),
+                    Player(1, init_disks={1: DiscState.Gone, 2: DiscState.Safe}),
+                ],
+                [1, 2, 2],
+                [Action(1, 2, DiscState.Vulnerable), Action(1, 2, DiscState.Gone)],
+                [
+                    Player(0, init_disks={1: DiscState.Gone}, init_taken=[3]),
+                    Player(1, init_disks={1: DiscState.Gone, 2: DiscState.Gone}),
+                ],
+            ),
+            (
+                # Unusable duplicate dice
+                [Player(0), Player(1)],
+                [2, 2, 2],
+                [Action(0, 2, DiscState.Safe), Action(1, 2, DiscState.Gone)],
+                [Player(0, init_disks={2: DiscState.Safe}, init_taken=[3]), Player(1, init_disks={2: DiscState.Gone})],
+            ),
+        ],
+    )
+    def test_take_turn_succeeds(
+        self,
+        mocker: MockFixture,
+        init_players: Collection[Player],
+        dice_rolls: Collection[DiscId],
+        chosen_actions: Collection[Action],
+        expected_player_states: Collection[Player],
+    ):
+        class TestStrategy(Strategy):
+            def choose_actions(self, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
+                assert dice == dice_rolls
+                return chosen_actions
 
-    def test_take_turn(self):
-        game = Game(player_count=3, player_init=[])
+        strategy = TestStrategy()
+        mocker.patch("game_implementation.game.get_dice", return_value=dice_rolls)
+        game = Game(player_count=2, player_init=init_players)
 
-        game.take_turn()
-        assert False
+        game.take_turn(0, strategy)
+
+        assert game.players == expected_player_states
+
+    @pytest.mark.parametrize(
+        "init_players, dice_rolls, chosen_actions",
+        [
+            (
+                # Unused dice
+                [Player(0), Player(1)],
+                [1, 2, 3],
+                [Action(0, 1, DiscState.Safe), Action(1, 2, DiscState.Gone)],
+            ),
+            (
+                # Unused duplicate dice
+                [
+                    Player(0, init_disks={1: DiscState.Gone}),
+                    Player(1, init_disks={1: DiscState.Gone, 2: DiscState.Safe}),
+                ],
+                [1, 2, 2],
+                [Action(1, 2, DiscState.Vulnerable)],
+            ),
+            (
+                # dice used twice
+                [Player(0), Player(1)],
+                [1, 2, 3],
+                [
+                    Action(0, 1, DiscState.Safe),
+                    Action(1, 2, DiscState.Gone),
+                    Action(1, 3, DiscState.Gone),
+                    Action(1, 3, DiscState.Gone),
+                ],
+            ),
+        ],
+    )
+    def test_take_turn_fails(
+        self,
+        mocker: MockFixture,
+        init_players: Collection[Player],
+        dice_rolls: Collection[DiscId],
+        chosen_actions: Collection[Action],
+    ):
+        class TestStrategy(Strategy):
+            def choose_actions(self, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
+                assert dice == dice_rolls
+                return chosen_actions
+
+        strategy = TestStrategy()
+        mocker.patch("game_implementation.game.get_dice", return_value=dice_rolls)
+        game = Game(player_count=2, player_init=init_players)
+
+        with pytest.raises(IllegalMoveException):
+            game.take_turn(0, strategy)
 
     def test_end_round(self):
         game = Game(player_count=3, player_init=[])
@@ -228,6 +348,12 @@ class TestGame:
         game = Game(player_count=3, player_init=[])
 
         game.winners()
+        assert False
+
+    def test_play_round(self):
+        game = Game(player_count=3, player_init=[])
+
+        game.play()
         assert False
 
     def test_play(self):
