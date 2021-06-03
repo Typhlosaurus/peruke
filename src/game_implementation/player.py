@@ -1,13 +1,14 @@
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Collection, Dict, List, Optional, Union
 
 from game_implementation.disc_state import DiscState
+from game_implementation.types import DiscId, DiscScore, PlayerId
 from game_implementation.exceptions import DiscStateException
 
 
 class Player:
-    player_id: int
+    player_id: PlayerId
     """Id of player for reporting"""
-    taken: List[int]
+    taken: List[DiscScore]
     """Scores of disks take (1..6)"""
     discs: List[DiscState]
     """6 Disc states"""
@@ -17,9 +18,9 @@ class Player:
     def __init__(
         self,
         player_id,
-        init_taken: Sequence[int] = (),
+        init_taken: Collection[DiscScore] = (),
         init_score: int = 0,
-        init_disks: Union[Sequence[DiscState], Dict[int, DiscState]] = (DiscState.Vulnerable,) * 6,
+        init_disks: Union[Collection[DiscState], Dict[DiscId, DiscState]] = (DiscState.Vulnerable,) * 6,
     ):
         self.player_id = player_id
         self.taken = [*init_taken]
@@ -57,11 +58,11 @@ class Player:
         return sum(self.taken) + sum([disc_id + 1 for disc_id, disc in enumerate(self.discs) if disc == DiscState.Safe])
 
     @property
-    def expected_score(self):
+    def expected_score(self) -> int:
         """Putative score if current round ended now."""
         return self.score + self.round_score
 
-    def end_round(self):
+    def end_round(self) -> int:
         """End current round now"""
         round_score = self.round_score
         print(f"Ending round for {self.player_id}: gaining {round_score}")
@@ -69,25 +70,25 @@ class Player:
         self.reset()
         return self.score
 
-    def make_safe(self, disc_id: int):
+    def make_safe(self, disc_id: DiscId):
         if self.discs[disc_id] != DiscState.Vulnerable:
             raise DiscStateException(f"cannot make safe {self.discs[disc_id]}")
         self.discs[disc_id] = DiscState.Safe
 
-    def make_vulnerable(self, disc_id: int):
+    def make_vulnerable(self, disc_id: DiscId):
         if self.discs[disc_id] != DiscState.Safe:
             raise DiscStateException(f"cannot make vulnerable {self.discs[disc_id]}")
         self.discs[disc_id] = DiscState.Vulnerable
 
-    def take(self, disc_id: int):
+    def take(self, disc_id: DiscId):
         self.taken.append(disc_id + 1)
 
-    def make_gone(self, disc_id: int):
+    def make_gone(self, disc_id: DiscId):
         if self.discs[disc_id] != DiscState.Vulnerable:
             raise DiscStateException(f"cannot take {self.discs[disc_id]}")
         self.discs[disc_id] = DiscState.Gone
 
-    def possible_new_state(self, disc_id: int, is_own_turn: bool) -> Optional[DiscState]:
+    def possible_new_state(self, disc_id: DiscId, is_own_turn: bool) -> Optional[DiscState]:
         if is_own_turn:
             if self.discs[disc_id] == DiscState.Vulnerable:
                 return DiscState.Safe

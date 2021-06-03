@@ -1,17 +1,18 @@
 import random
 from abc import ABC
-from typing import Any, Dict, Sequence
+from typing import Any, Collection, Dict
 
 from game_implementation.action import Action
 from game_implementation.disc_state import DiscState
 from game_implementation.game import Game, Strategy
+from game_implementation.types import DiscId, PlayerId
 
 
 class RandomStrategy(Strategy):
     def __init__(self, game: Game):
         self.game = game
 
-    def choose_actions(self, player_id: int, dice: Sequence[int]) -> Sequence[Action]:
+    def choose_actions(self, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
         for d in dice:
             possible_actions = self.game.possible_actions(player_id, d)
             if len(possible_actions) > 0:
@@ -25,7 +26,7 @@ class SimpleSortedStrategy(Strategy, ABC):
     def ordering(self, action: Action) -> Any:
         raise NotImplemented()
 
-    def choose_actions(self, player_id: int, dice: Sequence[int]) -> Sequence[Action]:
+    def choose_actions(self, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
         for d in dice:
             possible_actions = self.game.possible_actions(player_id, d)
             if len(possible_actions) > 0:
