@@ -133,9 +133,12 @@ class Game:
         scores = [player.end_round() for player in self.players]
         print(f"New score: {scores}")
 
-        self.round += 1
         self.turn = 0
-        return self.round >= self.player_count
+        self.round += 1
+
+        # player count is 1 based, round is 0 based, for example, in a 3 player game, right after round 2
+        #  we have had one round each player and round(3) == player_count(3)
+        return self.round == self.player_count
 
     def set_initial_defence(self):
         """ Roll dice for each player and use them to set initial safe dice. """

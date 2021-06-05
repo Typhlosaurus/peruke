@@ -328,32 +328,67 @@ class TestGame:
         with pytest.raises(IllegalMoveException):
             game.take_turn(0, strategy)
 
-    def test_end_round(self):
-        game = Game(player_count=3, player_init=[])
+    @pytest.mark.parametrize(
+        "round_ending, init_players, final_scores, expected_game_end",
+        [
+            # Take all disks
+            (0, [Player(0), Player(1), Player(2)], [0, sum(range(1, 7)) * 2, 0], False),
+            # all disks safe - score all safe disks, take no disks
+            (
+                1,
+                [
+                    Player(0, init_disks=[DiscState.Safe] * 6),
+                    Player(1, init_disks=[DiscState.Safe] * 6),
+                    Player(2, init_disks=[DiscState.Safe] * 6),
+                ],
+                [sum(range(1, 7))] * 3,
+                False,
+            ),
+            # Take all disks except 1 safe per player, add to initial scores
+            (
+                2,
+                [
+                    Player(0, init_score=10, init_disks={5: DiscState.Safe}),
+                    Player(1, init_score=11, init_disks={5: DiscState.Safe}),
+                    Player(2, init_score=12, init_disks={5: DiscState.Safe}),
+                ],
+                [10 + 6, 11 + 6 + sum(range(1, 6)) * 2, 12 + 6],
+                True,
+            ),
+        ],
+    )
+    def test_end_round_given_winner_is_1(
+        self, round_ending: PlayerId, init_players: List[Player], final_scores: List[int], expected_game_end: bool
+    ):
+        game = Game(player_count=3, player_init=init_players, round=round_ending)
 
-        game.end_round()
-        assert False
+        game_end = game.end_round(1)
+
+        assert game_end == expected_game_end
+        assert final_scores == [player.score for player in game.players]
 
     def test_set_initial_defence(self, mocker: MockFixture):
-        mocker.patch("game_implementation.game.get_unique_dice", return_value={1, 2, 3})
+        mocker.patch("game_implementation.game.get_unique_dice", side_effect=[{1, 2, 3}, {2, 3}, {4, 5, 3}])
 
         game = Game(player_count=3, player_init=[])
         game.set_initial_defence()
 
-        assert game.players[0] == Player(0, init_disks={1: DiscState.Safe, 2: DiscState.Safe, 3: DiscState.Safe,})
-        assert game.players[1] == Player(0, init_disks={1: DiscState.Safe, 2: DiscState.Safe, 3: DiscState.Safe,})
-        assert game.players[2] == Player(0, init_disks={1: DiscState.Safe, 2: DiscState.Safe, 3: DiscState.Safe,})
+        assert game.players[0] == Player(0, init_disks={1: DiscState.Safe, 2: DiscState.Safe, 3: DiscState.Safe})
+        assert game.players[1] == Player(1, init_disks={2: DiscState.Safe, 3: DiscState.Safe})
+        assert game.players[2] == Player(2, init_disks={3: DiscState.Safe, 4: DiscState.Safe, 5: DiscState.Safe})
 
     def test_winners(self):
-        game = Game(player_count=3, player_init=[])
+        game = Game(
+            player_count=3, player_init=[Player(0, init_score=20), Player(1, init_score=18), Player(2, init_score=20)]
+        )
 
-        game.winners()
-        assert False
+        assert game.winners() == [0, 2]
 
+    @pytest.mark.parametrize("", [(round), ()])
     def test_play_round(self):
         game = Game(player_count=3, player_init=[])
 
-        game.play()
+        game.play_round()
         assert False
 
     def test_play(self):
