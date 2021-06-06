@@ -1,5 +1,8 @@
 from typing import Collection, List, Union
 
+# from unittest.mock import MagicMock
+from unittest.mock import call, MagicMock
+
 import pytest
 from pytest_mock import MockFixture
 
@@ -8,6 +11,7 @@ from game_implementation.disc_state import DiscState
 from game_implementation.exceptions import DiscStateException, IllegalMoveException
 from game_implementation.game import Game, Strategy
 from game_implementation.player import Player
+from game_implementation.strategy import RandomStrategy
 from game_implementation.types import DiscId, PlayerId
 
 
@@ -384,15 +388,34 @@ class TestGame:
 
         assert game.winners() == [0, 2]
 
-    @pytest.mark.parametrize("", [(round), ()])
-    def test_play_round(self):
+    def test_play_round(self, mocker: MockFixture):
         game = Game(player_count=3, player_init=[])
 
-        game.play_round()
-        assert False
+        mock_take_turn = mocker.patch.object(game, "take_turn", side_effect=[False, False, True])
+        mock_strategy = MagicMock(Strategy)
+        strategies = [mock_strategy] * 3
 
-    def test_play(self):
+        game.play_round(strategies)
+
+        assert mock_take_turn.call_count == 3
+        print(mock_take_turn.mock_calls)
+        mock_take_turn.assert_has_calls([call(0, mock_strategy), call(1, mock_strategy), call(2, mock_strategy)])
+
+    def test_play(self, mocker: MockFixture):
         game = Game(player_count=3, player_init=[])
 
-        game.play()
-        assert False
+        mock_set_initial_defence = mocker.patch.object(game, "set_initial_defence")
+        mock_play_round = mocker.patch.object(game, "play_round")
+        mock_end_round = mocker.patch.object(game, "end_round", side_effect=[False, False, True])
+        mock_winners = mocker.patch.object(game, "winners", side_effect=[[3, 2]])
+
+        mock_strategy = MagicMock(Strategy)
+        strategies = [mock_strategy] * 3
+
+        winners = game.play(strategies)
+
+        assert mock_set_initial_defence.call_count == 1
+        assert mock_play_round.call_count == 3
+        assert mock_end_round.call_count == 3
+        assert mock_end_round.call_count == 1
+        assert winners == [3, 2]

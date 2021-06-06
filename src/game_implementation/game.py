@@ -159,8 +159,8 @@ class Game:
         end_of_round = False
         while not end_of_round:
             print(self, "\n")
-            self.player_id = (self.player_id + 1) % self.player_count
             end_of_round = self.take_turn(self.player_id, strategies[self.player_id])
+            self.player_id = (self.player_id + 1) % self.player_count
 
     def play(self, strategies: List[Strategy]) -> Collection[PlayerId]:
         """Start the game, take turns until round ends"""
