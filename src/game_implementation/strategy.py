@@ -1,19 +1,20 @@
 import random
 from abc import ABC
-from typing import Any, Dict, Sequence
+from typing import Any, Collection, Dict
 
 from game_implementation.action import Action
 from game_implementation.disc_state import DiscState
 from game_implementation.game import Game, Strategy
+from game_implementation.types import DiscId, PlayerId
 
 
 class RandomStrategy(Strategy):
     def __init__(self, game: Game):
         self.game = game
 
-    def choose_actions(self, player_id: int, dice: Sequence[int]) -> Sequence[Action]:
+    def choose_actions(self, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
         for d in dice:
-            possible_actions = self.game.board.possible_actions(player_id, d)
+            possible_actions = self.game.possible_actions(player_id, d)
             if len(possible_actions) > 0:
                 yield random.choice(possible_actions)
 
@@ -25,9 +26,9 @@ class SimpleSortedStrategy(Strategy, ABC):
     def ordering(self, action: Action) -> Any:
         raise NotImplemented()
 
-    def choose_actions(self, player_id: int, dice: Sequence[int]) -> Sequence[Action]:
+    def choose_actions(self, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
         for d in dice:
-            possible_actions = self.game.board.possible_actions(player_id, d)
+            possible_actions = self.game.possible_actions(player_id, d)
             if len(possible_actions) > 0:
                 ordered = sorted(possible_actions, key=self.ordering)
                 yield ordered[-1]
@@ -42,5 +43,5 @@ class TallestDaisyStrategy(SimpleSortedStrategy):
         # prefer first by action type, then by highest score
         return (
             self.action_preference[action.new_state],
-            self.game.board.players[action.target_id].expected_score,
+            self.game.players[action.target_id].expected_score,
         )

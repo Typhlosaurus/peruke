@@ -1,11 +1,12 @@
 from typing import NamedTuple
 
 from game_implementation.disc_state import DiscState
+from game_implementation.types import DiscId, PlayerId
 
 
 class Action(NamedTuple):
-    target_id: int
-    disc_id: int
+    target_id: PlayerId
+    disc_id: DiscId
     new_state: DiscState
 
     def __repr__(self):
