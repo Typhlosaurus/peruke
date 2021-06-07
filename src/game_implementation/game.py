@@ -5,12 +5,8 @@ from game_implementation.dice import get_dice, get_unique_dice
 from game_implementation.disc_state import DiscState
 from game_implementation.exceptions import IllegalMoveException
 from game_implementation.player import Player
-from game_implementation.types import DiscId, PlayerId
-
-
-class Strategy(Protocol):
-    def choose_actions(self, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
-        pass
+from game_implementation.strategy_protocol import Strategy
+from game_implementation.types import DiscId, PlayerCount, PlayerId
 
 
 class Game:
@@ -98,7 +94,7 @@ class Game:
         dice = get_dice()
         remaining_dice = [*dice]
 
-        for action in strategy.choose_actions(player_id, dice):
+        for action in strategy.choose_actions(self, player_id, dice):
             if action.disc_id not in remaining_dice:
                 if action.disc_id in dice:
                     raise IllegalMoveException(f"Dice {action.disc_id} already used ({action})")
@@ -152,7 +148,7 @@ class Game:
         winning_score = max([player.score for player in self.players])
         return [player.player_id for player in self.players if player.score == winning_score]
 
-    def play_round(self, strategies: List[Strategy]) -> bool:
+    def play_round(self, strategies: Sequence[Strategy]) -> bool:
         """
         Take turns until a round ends.
         """
@@ -164,7 +160,7 @@ class Game:
 
         return self.end_round(round_winner_id=self.player_id)
 
-    def play(self, strategies: List[Strategy]) -> Collection[PlayerId]:
+    def play(self, strategies: Sequence[Strategy]) -> Collection[PlayerId]:
         """Start the game, take turns until round ends"""
         print("Initial board")
         print(self, "\n", "Start Player:", self.start_player, "\n")
