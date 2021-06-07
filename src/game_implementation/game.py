@@ -1,4 +1,4 @@
-from typing import Collection, List, Literal, Protocol, Sequence
+from typing import Collection, List, Sequence
 
 from game_implementation.action import Action
 from game_implementation.dice import get_dice, get_unique_dice
@@ -14,7 +14,7 @@ class Strategy(Protocol):
 
 
 class Game:
-    player_count: Literal[2, 3, 4]
+    player_count: PlayerCount
     start_player: PlayerId
     turn: int
     round: PlayerId
@@ -22,7 +22,7 @@ class Game:
 
     def __init__(
         self,
-        player_count: Literal[2, 3, 4] = 3,
+        player_count: PlayerCount = 3,
         start_player: PlayerId = 0,
         turn: int = 0,
         round: PlayerId = 0,
