@@ -115,18 +115,18 @@ class Game:
 
         return self.is_round_over()
 
-    def end_round(self, winner_id: PlayerId) -> bool:
+    def end_round(self, round_winner_id: PlayerId) -> bool:
         """
         Winner takes vulnerable disks; update all player's scores
         with safe and taken discs.
 
         Args:
-            winner_id: id of winner
+            round_winner_id: id of winner
 
         Returns:
             True if game has ended
         """
-        self.winner_take_vulnerable_discs(winner_id)
+        self.winner_take_vulnerable_discs(round_winner_id)
         round_scores = [player.round_score for player in self.players]
         print(f"Scoring end of round: {round_scores}")
 
@@ -152,7 +152,7 @@ class Game:
         winning_score = max([player.score for player in self.players])
         return [player.player_id for player in self.players if player.score == winning_score]
 
-    def play_round(self, strategies: List[Strategy]):
+    def play_round(self, strategies: List[Strategy]) -> bool:
         """
         Take turns until a round ends.
         """
@@ -161,6 +161,8 @@ class Game:
             print(self, "\n")
             end_of_round = self.take_turn(self.player_id, strategies[self.player_id])
             self.player_id = (self.player_id + 1) % self.player_count
+
+        return self.end_round(round_winner_id=self.player_id)
 
     def play(self, strategies: List[Strategy]) -> Collection[PlayerId]:
         """Start the game, take turns until round ends"""
@@ -172,8 +174,7 @@ class Game:
 
         game_over = False
         while not game_over:
-            self.play_round(strategies)
-            game_over = self.end_round(winner_id=self.player_id)
+            game_over = self.play_round(strategies)
 
         winners = self.winners()
         print("\nEnd of game\nWinners: ", winners)
