@@ -390,22 +390,26 @@ class TestGame:
     def test_play_round(self, mocker: MockFixture):
         game = Game(player_count=3, player_init=[])
 
-        mock_take_turn = mocker.patch.object(game, "take_turn", side_effect=[False, False, True])
+        mock_take_turn = mocker.patch.object(game, "take_turn", side_effect=[False, False, False, True])
+        mock_end_round = mocker.patch.object(game, "end_round", side_effect=[True])
         mock_strategy = MagicMock(Strategy)
         strategies = [mock_strategy] * 3
 
-        game.play_round(strategies)
+        end_game = game.play_round(strategies)
 
-        assert mock_take_turn.call_count == 3
+        assert mock_take_turn.call_count == 4
         print(mock_take_turn.mock_calls)
-        mock_take_turn.assert_has_calls([call(0, mock_strategy), call(1, mock_strategy), call(2, mock_strategy)])
+        mock_take_turn.assert_has_calls(
+            [call(0, mock_strategy), call(1, mock_strategy), call(2, mock_strategy), call(0, mock_strategy)]
+        )
+        assert mock_end_round.call_count == 1
+        assert end_game is True
 
     def test_play(self, mocker: MockFixture):
         game = Game(player_count=3, player_init=[])
 
         mock_set_initial_defence = mocker.patch.object(game, "set_initial_defence")
-        mock_play_round = mocker.patch.object(game, "play_round")
-        mock_end_round = mocker.patch.object(game, "end_round", side_effect=[False, False, True])
+        mock_play_round = mocker.patch.object(game, "play_round", side_effect=[False, False, True])
         mocker.patch.object(game, "winners", side_effect=[[3, 2]])
 
         mock_strategy = MagicMock(Strategy)
@@ -415,6 +419,4 @@ class TestGame:
 
         assert mock_set_initial_defence.call_count == 1
         assert mock_play_round.call_count == 3
-        assert mock_end_round.call_count == 3
-        assert mock_end_round.call_count == 1
         assert winners == [3, 2]

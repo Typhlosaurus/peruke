@@ -1,20 +1,16 @@
-from typing import Collection, List, Literal, Protocol, Sequence
+from typing import Collection, List, Sequence
 
 from game_implementation.action import Action
 from game_implementation.dice import get_dice, get_unique_dice
 from game_implementation.disc_state import DiscState
 from game_implementation.exceptions import IllegalMoveException
 from game_implementation.player import Player
-from game_implementation.types import DiscId, PlayerId
-
-
-class Strategy(Protocol):
-    def choose_actions(self, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
-        pass
+from game_implementation.strategy_protocol import Strategy
+from game_implementation.types import DiscId, PlayerCount, PlayerId
 
 
 class Game:
-    player_count: Literal[2, 3, 4]
+    player_count: PlayerCount
     start_player: PlayerId
     turn: int
     round: PlayerId
@@ -22,7 +18,7 @@ class Game:
 
     def __init__(
         self,
-        player_count: Literal[2, 3, 4] = 3,
+        player_count: PlayerCount = 3,
         start_player: PlayerId = 0,
         turn: int = 0,
         round: PlayerId = 0,
@@ -98,7 +94,7 @@ class Game:
         dice = get_dice()
         remaining_dice = [*dice]
 
-        for action in strategy.choose_actions(player_id, dice):
+        for action in strategy.choose_actions(self, player_id, dice):
             if action.disc_id not in remaining_dice:
                 if action.disc_id in dice:
                     raise IllegalMoveException(f"Dice {action.disc_id} already used ({action})")
@@ -115,18 +111,18 @@ class Game:
 
         return self.is_round_over()
 
-    def end_round(self, winner_id: PlayerId) -> bool:
+    def end_round(self, round_winner_id: PlayerId) -> bool:
         """
         Winner takes vulnerable disks; update all player's scores
         with safe and taken discs.
 
         Args:
-            winner_id: id of winner
+            round_winner_id: id of winner
 
         Returns:
             True if game has ended
         """
-        self.winner_take_vulnerable_discs(winner_id)
+        self.winner_take_vulnerable_discs(round_winner_id)
         round_scores = [player.round_score for player in self.players]
         print(f"Scoring end of round: {round_scores}")
 
@@ -152,7 +148,7 @@ class Game:
         winning_score = max([player.score for player in self.players])
         return [player.player_id for player in self.players if player.score == winning_score]
 
-    def play_round(self, strategies: List[Strategy]):
+    def play_round(self, strategies: Sequence[Strategy]) -> bool:
         """
         Take turns until a round ends.
         """
@@ -162,7 +158,9 @@ class Game:
             end_of_round = self.take_turn(self.player_id, strategies[self.player_id])
             self.player_id = (self.player_id + 1) % self.player_count
 
-    def play(self, strategies: List[Strategy]) -> Collection[PlayerId]:
+        return self.end_round(round_winner_id=self.player_id)
+
+    def play(self, strategies: Sequence[Strategy]) -> Collection[PlayerId]:
         """Start the game, take turns until round ends"""
         print("Initial board")
         print(self, "\n", "Start Player:", self.start_player, "\n")
@@ -172,8 +170,7 @@ class Game:
 
         game_over = False
         while not game_over:
-            self.play_round(strategies)
-            game_over = self.end_round(winner_id=self.player_id)
+            game_over = self.play_round(strategies)
 
         winners = self.winners()
         print("\nEnd of game\nWinners: ", winners)
