@@ -19,7 +19,7 @@ class RandomStrategy(Strategy):
 
 class SimpleSortedStrategy(Strategy, ABC):
     def ordering(self, game: Game, action: Action) -> Any:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def choose_actions(self, game: Game, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
         for d in dice:

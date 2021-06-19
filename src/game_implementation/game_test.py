@@ -269,17 +269,17 @@ class TestGame:
         expected_player_states: Collection[Player],
     ):
         class TestStrategy(Strategy):
-            def choose_actions(self, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
+            def choose_actions(self, game: Game, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
                 assert dice == dice_rolls
                 return chosen_actions
 
         strategy = TestStrategy()
         mocker.patch("game_implementation.game.get_dice", return_value=dice_rolls)
-        game = Game(player_count=2, player_init=init_players)
+        test_game = Game(player_count=2, player_init=init_players)
 
-        game.take_turn(0, strategy)
+        test_game.take_turn(0, strategy)
 
-        assert game.players == expected_player_states
+        assert test_game.players == expected_player_states
 
     @pytest.mark.parametrize(
         "init_players, dice_rolls, chosen_actions",
@@ -320,7 +320,7 @@ class TestGame:
         chosen_actions: Collection[Action],
     ):
         class TestStrategy(Strategy):
-            def choose_actions(self, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
+            def choose_actions(self, game, player_id: PlayerId, dice: Collection[DiscId]) -> Collection[Action]:
                 assert dice == dice_rolls
                 return chosen_actions
 
