@@ -5,7 +5,7 @@ from typing import Any, Collection, Dict, Tuple
 from game_implementation.action import Action
 from game_implementation.disc_state import DiscState
 from game_implementation.game import Game
-from game_implementation.strategy_protocol import Strategy
+from game_implementation.strategy_api import Strategy
 from game_implementation.types import DiscId, PlayerId
 
 

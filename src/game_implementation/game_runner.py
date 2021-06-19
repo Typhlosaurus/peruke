@@ -1,4 +1,4 @@
-from collections import Sequence
+from typing import Sequence
 
 from game_implementation.game import Game, Strategy
 
