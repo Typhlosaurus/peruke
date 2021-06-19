@@ -402,7 +402,8 @@ class TestGame:
         mock_take_turn.assert_has_calls(
             [call(0, mock_strategy), call(1, mock_strategy), call(2, mock_strategy), call(0, mock_strategy)]
         )
-        assert mock_end_round.call_count == 1
+        mock_end_round.assert_called_once_with(round_winner_id=0)
+        assert game.player_id == 1
         assert end_game is True
 
     def test_play(self, mocker: MockFixture):

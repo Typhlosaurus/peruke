@@ -5,7 +5,7 @@ from game_implementation.dice import get_dice, get_unique_dice
 from game_implementation.disc_state import DiscState
 from game_implementation.exceptions import IllegalMoveException
 from game_implementation.player import Player
-from game_implementation.strategy_protocol import Strategy
+from game_implementation.strategy_api import Strategy
 from game_implementation.types import DiscId, PlayerCount, PlayerId
 
 
@@ -36,7 +36,7 @@ class Game:
     def __repr__(self):
         return "\n".join(
             [
-                f"Round: {self.round}, Turn: {self.turn}",
+                f"Round: {self.round}, Turn: {self.turn}, Player: {self.player_id}",
                 "\n".join([player.__repr__() for player in self.players]),
                 f"Game Scores: {[player.score for player in self.players]}",
             ]
@@ -122,6 +122,7 @@ class Game:
         Returns:
             True if game has ended
         """
+        print(f"Round is over, round winner: {round_winner_id}")
         self.winner_take_vulnerable_discs(round_winner_id)
         round_scores = [player.round_score for player in self.players]
         print(f"Scoring end of round: {round_scores}")
@@ -138,10 +139,14 @@ class Game:
 
     def set_initial_defence(self):
         """ Roll dice for each player and use them to set initial safe dice. """
+        print("Initial defensive rolls")
         for player_id in range(self.player_count):
             dice = get_unique_dice()
             for d in dice:
                 self.play_action(player_id, Action(player_id, d, DiscState.Safe))
+
+        print("Initial board")
+        print(self, "\n", "Start Player:", self.start_player, "\n")
 
     def winners(self) -> Collection[PlayerId]:
         """Return player(s) with highest score"""
@@ -153,19 +158,18 @@ class Game:
         Take turns until a round ends.
         """
         end_of_round = False
+        round_winner = 0
         while not end_of_round:
             print(self, "\n")
             end_of_round = self.take_turn(self.player_id, strategies[self.player_id])
+            round_winner = self.player_id
+            # TODO: https://boardgamegeek.com/thread/2679397/end-round-player-succession-question
             self.player_id = (self.player_id + 1) % self.player_count
 
-        return self.end_round(round_winner_id=self.player_id)
+        return self.end_round(round_winner_id=round_winner)
 
     def play(self, strategies: Sequence[Strategy]) -> Collection[PlayerId]:
         """Start the game, take turns until round ends"""
-        print("Initial board")
-        print(self, "\n", "Start Player:", self.start_player, "\n")
-
-        print("Initial defensive rolls")
         self.set_initial_defence()
 
         game_over = False
