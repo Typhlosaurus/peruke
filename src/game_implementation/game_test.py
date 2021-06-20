@@ -380,6 +380,14 @@ class TestGame:
         assert game.players[1] == Player(1, init_disks={2: DiscState.Safe, 3: DiscState.Safe})
         assert game.players[2] == Player(2, init_disks={3: DiscState.Safe, 4: DiscState.Safe, 5: DiscState.Safe})
 
+    @pytest.mark.parametrize("player_id, expected_next_player_id", [(0, 1), (1, 2), (2, 0)])
+    def test_next_player(self, player_id: PlayerId, expected_next_player_id: PlayerId):
+        game = Game(player_count=3)
+        game.player_id = player_id
+        game.next_player()
+
+        assert game.player_id == expected_next_player_id
+
     def test_winners(self):
         game = Game(
             player_count=3, player_init=[Player(0, init_score=20), Player(1, init_score=18), Player(2, init_score=20)]

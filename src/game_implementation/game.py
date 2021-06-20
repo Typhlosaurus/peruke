@@ -60,6 +60,16 @@ class Game:
                 self.take_disc(winner, looser, disc_id)
 
     def play_action(self, player_id: PlayerId, action: Action) -> bool:
+        """
+        Play an action on behalf of a player
+
+        Args:
+            player_id:
+            action:
+
+        Returns:
+            True if end of round
+        """
         print(f"Player: {player_id}: {action}")
         target = self.players[action.target_id]
         if action.new_state == DiscState.Gone:
@@ -135,7 +145,11 @@ class Game:
 
         # player count is 1 based, round is 0 based, for example, in a 3 player game, right after round 2
         #  we have had one round each player and round(3) == player_count(3)
-        return self.round == self.player_count
+        end_of_game = self.round == self.player_count
+        if end_of_game:
+            print("\nEnd of game\nWinners: ", self.winners())
+
+        return end_of_game
 
     def set_initial_defence(self):
         """ Roll dice for each player and use them to set initial safe dice. """
@@ -153,6 +167,9 @@ class Game:
         winning_score = max([player.score for player in self.players])
         return [player.player_id for player in self.players if player.score == winning_score]
 
+    def next_player(self):
+        self.player_id = (self.player_id + 1) % self.player_count
+
     def play_round(self, strategies: Sequence[Strategy]) -> bool:
         """
         Take turns until a round ends.
@@ -162,9 +179,9 @@ class Game:
         while not end_of_round:
             print(self, "\n")
             end_of_round = self.take_turn(self.player_id, strategies[self.player_id])
-            round_winner = self.player_id
             # TODO: https://boardgamegeek.com/thread/2679397/end-round-player-succession-question
-            self.player_id = (self.player_id + 1) % self.player_count
+            round_winner = self.player_id
+            self.next_player()
 
         return self.end_round(round_winner_id=round_winner)
 
@@ -176,7 +193,4 @@ class Game:
         while not game_over:
             game_over = self.play_round(strategies)
 
-        winners = self.winners()
-        print("\nEnd of game\nWinners: ", winners)
-
-        return winners
+        return self.winners()
