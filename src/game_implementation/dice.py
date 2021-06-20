@@ -1,12 +1,16 @@
 from random import randrange
-from typing import Collection
+from typing import Collection, Iterable
 
-from game_implementation.types import DiscId
+from game_implementation.game_types import DiscId
+
+
+def repr_dice(dice: Iterable[DiscId]) -> str:
+    return f"{[d + 1 for d in dice]}"
 
 
 def get_dice() -> Collection[DiscId]:
     dice = [randrange(0, 6) for _ in range(3)]
-    print(f"Dice: {[d + 1 for d in dice]}")
+    print(f"Dice: {repr_dice(dice)}")
     return dice
 
 

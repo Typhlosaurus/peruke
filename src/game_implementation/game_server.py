@@ -2,7 +2,7 @@ import random
 from typing import Collection, Container, List, NamedTuple, Protocol
 
 from game_implementation.action import Action
-from game_implementation.dice import get_dice
+from game_implementation.dice import get_dice, repr_dice
 from game_implementation.game import Game
 from game_implementation.strategy_api import Strategy
 from game_implementation.game_types import DiscId, PlayerCount, PlayerId
@@ -10,7 +10,10 @@ from game_implementation.game_types import DiscId, PlayerCount, PlayerId
 
 class ServerState(NamedTuple):
     game: Game
-    turn_dice: Collection[DiscId]
+    client_dice: Collection[DiscId]
+
+    def __repr__(self) -> str:
+        return f"{self.game}\n{repr_dice(self.client_dice)}"
 
 
 CLIENT_PLAYER_ID = 0
@@ -61,7 +64,7 @@ class GameServer(ServerApi):
     game: Game
     """The current game - replaced after a reset"""
 
-    client_dice = List[DiscId]
+    client_dice: List[DiscId]
     """
     The dice that the client has rolled.
 
@@ -80,9 +83,12 @@ class GameServer(ServerApi):
         self.strategies = strategies
 
     def reset(self) -> None:
-        self.game = Game(player_count=self.player_count, start_player=random.randint(0, self.player_count - 1))
+        print(*["X" * 70 + "\n"] * 3)
+        start_player = random.randint(0, self.player_count - 1)
+        self.game = Game(player_count=self.player_count, start_player=start_player)
         self.game.set_initial_defence()
         self._run_until_client_turn()
+        print(self.game)
 
     def state(self) -> ServerState:
         return ServerState(self.game, self.client_dice)
@@ -100,8 +106,11 @@ class GameServer(ServerApi):
                 end_of_game = self.game.end_round(round_winner_id=self.game.player_id)
                 if end_of_game:
                     return True
-                self.game.next_player()
+            self.game.next_player()
 
+        self._roll_client_dice()
+
+        print(self.state())
         return False
 
     @property
@@ -136,7 +145,7 @@ class GameServer(ServerApi):
         self._discard_first_client_die_while_unplayable()
 
     def _make_action_for_target(self, target_id: PlayerId) -> Action:
-        target_state = self.game.players[target_id].possible_new_state(self._current_die)
+        target_state = self.game.players[target_id].possible_new_state(self._current_die, target_id == CLIENT_PLAYER_ID)
         assert target_state is not None
         return Action(target_id, self._current_die, target_state)
 
@@ -167,7 +176,5 @@ class GameServer(ServerApi):
             end_of_game = self._run_until_client_turn()
             if end_of_game:
                 return True
-            else:
-                self._roll_client_dice()
 
         return False
