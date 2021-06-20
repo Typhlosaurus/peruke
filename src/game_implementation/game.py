@@ -148,6 +148,8 @@ class Game:
         end_of_game = self.round == self.player_count
         if end_of_game:
             print("\nEnd of game\nWinners: ", self.winners())
+        else:
+            self.set_initial_defence()
 
         return end_of_game
 
@@ -179,8 +181,8 @@ class Game:
         while not end_of_round:
             print(self, "\n")
             end_of_round = self.take_turn(self.player_id, strategies[self.player_id])
-            # TODO: https://boardgamegeek.com/thread/2679397/end-round-player-succession-question
             round_winner = self.player_id
+            # TODO: https://boardgamegeek.com/thread/2679397/end-round-player-succession-question
             self.next_player()
 
         return self.end_round(round_winner_id=round_winner)

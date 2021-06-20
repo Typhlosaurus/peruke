@@ -11,7 +11,7 @@ from game_implementation.disc_state import DiscState
 from game_implementation.exceptions import DiscStateException, IllegalMoveException
 from game_implementation.game import Game, Strategy
 from game_implementation.player import Player
-from game_implementation.types import DiscId, PlayerId
+from game_implementation.game_types import DiscId, PlayerId
 
 
 class TestGame:
@@ -361,14 +361,24 @@ class TestGame:
         ],
     )
     def test_end_round_given_winner_is_1(
-        self, round_ending: PlayerId, init_players: List[Player], final_scores: List[int], expected_game_end: bool
+        self,
+        round_ending: PlayerId,
+        init_players: List[Player],
+        final_scores: List[int],
+        expected_game_end: bool,
+        mocker: MockFixture,
     ):
         game = Game(player_count=3, player_init=init_players, round=round_ending)
+        mock_set_initial_defence = mocker.patch.object(game, "set_initial_defence")
 
         game_end = game.end_round(1)
 
         assert game_end == expected_game_end
         assert final_scores == [player.score for player in game.players]
+        if game_end:
+            mock_set_initial_defence.assert_not_called()
+        else:
+            mock_set_initial_defence.assert_called_once()
 
     def test_set_initial_defence(self, mocker: MockFixture):
         mocker.patch("game_implementation.game.get_unique_dice", side_effect=[{1, 2, 3}, {2, 3}, {4, 5, 3}])
