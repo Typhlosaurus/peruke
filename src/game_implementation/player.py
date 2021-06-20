@@ -1,7 +1,7 @@
 from typing import Collection, Dict, List, Optional, Union
 
 from game_implementation.disc_state import DiscState
-from game_implementation.types import DiscId, DiscScore, PlayerId
+from game_implementation.game_types import DiscId, DiscScore, PlayerId
 from game_implementation.exceptions import DiscStateException
 
 

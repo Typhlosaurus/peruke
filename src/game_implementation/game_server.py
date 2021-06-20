@@ -5,7 +5,7 @@ from game_implementation.action import Action
 from game_implementation.dice import get_dice
 from game_implementation.game import Game
 from game_implementation.strategy_api import Strategy
-from game_implementation.types import DiscId, PlayerCount, PlayerId
+from game_implementation.game_types import DiscId, PlayerCount, PlayerId
 
 
 class ServerState(NamedTuple):

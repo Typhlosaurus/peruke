@@ -1,7 +1,7 @@
 from typing import NamedTuple
 
 from game_implementation.disc_state import DiscState
-from game_implementation.types import DiscId, PlayerId
+from game_implementation.game_types import DiscId, PlayerId
 
 
 class Action(NamedTuple):

@@ -6,7 +6,7 @@ from game_implementation.disc_state import DiscState
 from game_implementation.exceptions import IllegalMoveException
 from game_implementation.player import Player
 from game_implementation.strategy_api import Strategy
-from game_implementation.types import DiscId, PlayerCount, PlayerId
+from game_implementation.game_types import DiscId, PlayerCount, PlayerId
 
 
 class Game:

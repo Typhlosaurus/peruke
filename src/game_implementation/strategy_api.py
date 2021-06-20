@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Collection, Protocol, TYPE_CHECKING
 
 from game_implementation.action import Action
-from game_implementation.types import DiscId, PlayerId
+from game_implementation.game_types import DiscId, PlayerId
 
 if TYPE_CHECKING:
     from game import Game
